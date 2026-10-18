@@ -1,4 +1,6 @@
-import { AudioContext } from 'react-native-audio-api';
+// TEMPORARY: lazy import for Expo Go previews. Remove before release builds; see lazyAudioApi.ts.
+import type { AudioContext } from 'react-native-audio-api';
+import { getAudioApi } from './lazyAudioApi';
 import { SampleAligner, int16ToFloat } from '../lib/pcm';
 
 const RATE = 16000;
@@ -11,7 +13,7 @@ export class PcmPlayer {
 
   start() {
     if (this.ctx) return;
-    this.ctx = new AudioContext({ sampleRate: RATE });
+    this.ctx = new (getAudioApi().AudioContext)({ sampleRate: RATE });
     this.source = this.ctx.createBufferQueueSource();
     this.source.connect(this.ctx.destination);
     this.source.start();

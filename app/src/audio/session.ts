@@ -1,29 +1,30 @@
-import { AudioManager } from 'react-native-audio-api';
+// TEMPORARY: lazy import for Expo Go previews. Remove before release builds; see lazyAudioApi.ts.
+import { getAudioApi } from './lazyAudioApi';
 
 let configured = false;
 
 /** Configures the OS audio session for a phone-call style experience (echo cancellation, speaker). */
 export async function activateCallAudio(): Promise<void> {
   if (!configured) {
-    AudioManager.setAudioSessionOptions({
+    getAudioApi().AudioManager.setAudioSessionOptions({
       iosCategory: 'playAndRecord',
       iosMode: 'voiceChat',
       iosOptions: ['allowBluetoothHFP', 'defaultToSpeaker'],
     });
     configured = true;
   }
-  await AudioManager.setAudioSessionActivity(true);
+  await getAudioApi().AudioManager.setAudioSessionActivity(true);
 }
 
 export async function deactivateCallAudio(): Promise<void> {
-  try { await AudioManager.setAudioSessionActivity(false); } catch { /* already inactive */ }
+  try { await getAudioApi().AudioManager.setAudioSessionActivity(false); } catch { /* already inactive */ }
 }
 
 export async function ensureMicPermission(): Promise<boolean> {
   try {
-    const current = await AudioManager.checkRecordingPermissions();
+    const current = await getAudioApi().AudioManager.checkRecordingPermissions();
     if (current === 'Granted') return true;
-    return (await AudioManager.requestRecordingPermissions()) === 'Granted';
+    return (await getAudioApi().AudioManager.requestRecordingPermissions()) === 'Granted';
   } catch {
     return false;
   }

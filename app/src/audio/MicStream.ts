@@ -1,4 +1,6 @@
-import { AudioRecorder } from 'react-native-audio-api';
+// TEMPORARY: lazy import for Expo Go previews. Remove before release builds; see lazyAudioApi.ts.
+import type { AudioRecorder } from 'react-native-audio-api';
+import { getAudioApi } from './lazyAudioApi';
 import { floatToInt16, int16ToBytes, meterLevel, resample, rms } from '../lib/pcm';
 
 export interface MicOptions {
@@ -18,7 +20,7 @@ export class MicStream {
 
   start() {
     if (this.rec) return;
-    const rec = new AudioRecorder();
+    const rec = new (getAudioApi().AudioRecorder)();
     rec.onAudioReady({ sampleRate: 16000, bufferLength: 1600, channelCount: 1 }, (e) => {
       if (this.opts.isMuted?.()) { this.opts.onLevel?.(0); return; }
       let data: Float32Array = e.buffer.getChannelData(0);
