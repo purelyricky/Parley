@@ -1,8 +1,11 @@
 import { create } from 'zustand';
+// TEMPORARY demo mode (Expo Go preview): remove before release builds; see AGENTS.md.
+import { DEMO } from '../demo/demo';
+import { DemoSocket } from '../demo/DemoSocket';
 import { MicStream } from '../audio/MicStream';
 import { PcmPlayer } from '../audio/PcmPlayer';
 import { activateCallAudio, deactivateCallAudio, ensureMicPermission } from '../audio/session';
-import { CallSocket, type SocketStatus } from '../lib/callSocket';
+import { CallSocket, type CallSocketHandlers, type SocketStatus } from '../lib/callSocket';
 import { reduceCall, type CallView } from '../lib/callReducer';
 import { toWsUrl } from '../lib/format';
 import type { ServerMessage } from '../lib/protocol';
@@ -36,7 +39,7 @@ interface CallStore {
   toggleMute(): void;
 }
 
-let socket: CallSocket | null = null;
+let socket: Pick<CallSocket, 'connect' | 'close' | 'send' | 'sendAudio' | 'isOpen'> | null = null;
 let mic: MicStream | null = null;
 let player: PcmPlayer | null = null;
 let audioOn = false;
@@ -157,7 +160,7 @@ export const useCall = create<CallStore>((set, get) => {
       const { serverUrl, token } = useAuth.getState();
       if (!serverUrl || !token) return;
       socket?.close();
-      socket = new CallSocket(`${toWsUrl(serverUrl)}/ws?token=${encodeURIComponent(token)}`, {
+      const handlers: CallSocketHandlers = {
         onMessage,
         onAudio: (b) => player?.push(b),
         onStatus: (status) => {
@@ -168,7 +171,10 @@ export const useCall = create<CallStore>((set, get) => {
             useAuth.getState().refresh().finally(() => { probing = false; });
           }
         },
-      });
+      };
+      socket = DEMO
+        ? new DemoSocket(handlers)
+        : new CallSocket(`${toWsUrl(serverUrl)}/ws?token=${encodeURIComponent(token)}`, handlers);
       socket.connect();
     },
 

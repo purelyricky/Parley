@@ -15,13 +15,18 @@
 //      (`import { AudioRecorder } from 'react-native-audio-api'`, etc.) and drop the
 //      `getAudioApi()` calls.
 //   3. Run `npm run typecheck` and `npm test`.
-// Search for "lazyAudioApi" to find every place to change.
+// Also remove the demo mode in src/demo/ and the `DEMO` hooks (see AGENTS.md).
+// Search for "lazyAudioApi" and "DEMO" to find every place to change.
+import { DEMO } from '../demo/demo';
+import { demoAudioApi } from '../demo/demoAudio';
+
 type AudioApi = typeof import('react-native-audio-api');
 
 let cached: AudioApi | null = null;
 
 export function getAudioApi(): AudioApi {
   if (cached) return cached;
+  if (DEMO) return (cached = demoAudioApi as unknown as AudioApi);
   try {
     cached = require('react-native-audio-api') as AudioApi;
     return cached;

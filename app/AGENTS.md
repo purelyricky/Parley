@@ -40,8 +40,11 @@ Docs: https://docs.expo.dev/eas/index.md
 - Expo Go only includes its bundled native modules. After adding a library with native code, the app needs a development build: `npx expo run:ios|android` locally, or `eas build --profile development`.
 - Prefer recommended Expo modules over third-party libraries, and check your available skills before adding dependencies. Docs: https://docs.expo.dev/versions/latest/index.md
 
-## Temporary workaround: lazy `react-native-audio-api` (REMOVE BEFORE RELEASE)
+## Temporary workaround: Expo Go demo mode + lazy `react-native-audio-api` (REMOVE BEFORE RELEASE)
 
-`src/audio/lazyAudioApi.ts` loads `react-native-audio-api` lazily so the UI can be previewed in Expo Go, which lacks that native module. `MicStream.ts`, `PcmPlayer.ts` and `session.ts` use it. It exists only on branch `dev/lazy-audio-import`.
+Branch `dev/lazy-audio-import` only. It lets every screen and flow run in Expo Go with no server and no native audio:
+- `src/audio/lazyAudioApi.ts` loads `react-native-audio-api` lazily (used by `MicStream.ts`, `PcmPlayer.ts`, `session.ts`).
+- `src/demo/` holds the fakes: `demo.ts` (the `DEMO` flag: on in Expo Go, or with `EXPO_PUBLIC_DEMO=1`), `demoFetch.ts` (fake REST backend), `DemoSocket.ts` (scripted calls, plus a fake incoming call from `anna` ~20s after connecting), `demoAudio.ts` (fake audio module).
+- Demo hooks live in `src/state/auth.ts`, `src/state/call.ts` and `app/(onboarding)/index.tsx` (search for `DEMO`).
 
-**Agents: the moment the user says they are ready to make a build or ship, remind them and revert this.** Delete `lazyAudioApi.ts`, restore the top-level `react-native-audio-api` imports in those three files, then run `npm run typecheck` and `npm test`. Search for `lazyAudioApi` to find every spot. Real builds must use a development build or EAS, not Expo Go.
+**Agents: the moment the user says they are ready to make a build or ship, remind them and revert this.** Preferred: build releases from `master`, which has none of it, and never merge this branch. Otherwise: delete `src/demo/` and `src/audio/lazyAudioApi.ts`, remove the `DEMO` code from the three files above, restore the top-level `react-native-audio-api` imports in the three audio files, then run `npm run typecheck` and `npm test`. Search for `lazyAudioApi` and `DEMO`. Real builds must use a development build or EAS, not Expo Go.

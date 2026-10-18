@@ -1,5 +1,8 @@
 import Constants from 'expo-constants';
 import { create } from 'zustand';
+// TEMPORARY demo mode (Expo Go preview): remove before release builds; see AGENTS.md.
+import { DEMO, DEMO_SERVER_URL } from '../demo/demo';
+import { makeDemoFetch } from '../demo/demoFetch';
 import { Api, ApiError } from '../lib/api';
 import { normalizeServerUrl } from '../lib/format';
 import type { PublicUser } from '../lib/protocol';
@@ -28,7 +31,7 @@ interface AuthState extends Persisted {
   signOut(): Promise<void>;
 }
 
-export const DEFAULT_SERVER_URL: string =
+export const DEFAULT_SERVER_URL: string = DEMO ? DEMO_SERVER_URL :
   process.env.EXPO_PUBLIC_SERVER_URL ?? ((Constants.expoConfig?.extra as any)?.serverUrl as string | undefined) ?? '';
 
 export const useAuth = create<AuthState>((set, get) => {
@@ -36,6 +39,8 @@ export const useAuth = create<AuthState>((set, get) => {
     const { serverUrl, token, user, phoneEnabled, onboardingDone } = get();
     void setItem(KEY, JSON.stringify({ serverUrl, token, user, phoneEnabled, onboardingDone } satisfies Persisted));
   };
+  const makeApi = (token: string | null) =>
+    new Api(get().serverUrl, token, DEMO ? makeDemoFetch(() => get().user) : undefined);
   return {
     serverUrl: DEFAULT_SERVER_URL,
     token: null,
@@ -68,11 +73,11 @@ export const useAuth = create<AuthState>((set, get) => {
     },
 
     api() {
-      return new Api(get().serverUrl, get().token);
+      return makeApi(get().token);
     },
 
     async register(username, language) {
-      const r = await new Api(get().serverUrl).register(username, language);
+      const r = await makeApi(null).register(username, language);
       set({ token: r.token, user: r.user, phoneEnabled: r.features.phone });
       persist();
     },
@@ -83,6 +88,7 @@ export const useAuth = create<AuthState>((set, get) => {
     async finishOnboarding() { set({ onboardingDone: true }); persist(); },
 
     async refresh() {
+      if (DEMO) return; // nothing to refresh: the demo backend is local
       try {
         const r = await get().api().me();
         set({ user: r.user, phoneEnabled: r.features.phone });

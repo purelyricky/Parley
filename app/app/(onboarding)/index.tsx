@@ -2,6 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
+import { DEMO } from '../../src/demo/demo';
+import { makeDemoFetch } from '../../src/demo/demoFetch';
 import { Api } from '../../src/lib/api';
 import { normalizeServerUrl } from '../../src/lib/format';
 import { useAuth } from '../../src/state/auth';
@@ -28,7 +30,7 @@ export default function Welcome() {
     if (!normalized) { setShowServer(true); setError('Enter the address of your Parley server first.'); return; }
     setBusy(true); setError(null);
     try {
-      await new Api(normalized).health();
+      await new Api(normalized, null, DEMO ? makeDemoFetch(() => null) : undefined).health();
       await useAuth.getState().setServerUrl(normalized);
       router.push('/profile');
     } catch (e: any) {
